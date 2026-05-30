@@ -1,101 +1,136 @@
-# 건설 산업재해 분석: 내부 안전관리·현장 안전행동과 외부기관 조절효과
+# 건설업 산업재해 분석 — XAI 기반 위계적 LR + ML + SHAP
 
-제13회 안전보건 논문공모전 출품작.
+> 「건설안전 사고결과 예측을 위한 설명가능 인공지능(XAI) 기반 분석: 회귀모형과 머신러닝 모형의 비교를 중심으로」
 
 ## 연구 질문 (RQ)
 
-> 건설현장의 내부 안전 관리(A)와 실질적 안전 행동(B)이 산업재해 발생에 미치는 영향 — **외부 기관의 조절효과를 중심으로**
+**RQ1**: 내부 안전관리체계(독립 A 3변수) + 현장 안전행동(독립 B 5변수) → 산업재해 발생  
+**RQ2**: 외부기관 개입(조절 3변수)의 조절효과
 
 ## 데이터
 
-- 출처: **제10차 산업안전보건 실태조사 (2021, 건설업)** — 한국산업안전보건공단 산업안전보건연구원
-- 원자료: 1,502개 사업장 (공사금액 50억 이상)
-- 최종 분석 표본: **1,375개 사업장 × 17개 변수** (전처리 완료, 박천수 2023·2024·2025와 동일한 Listwise Deletion 절차)
-- 원자료: `data/제10차 산업안전보건 실태조사_raw data_건설업_230824.CSV`
-- 분석용 파일: `data/전처리_최종.csv` (재현은 `notebooks/01_전처리.ipynb`)
+- **원자료**: 제10차 산업안전보건 실태조사 (2021, 건설업) — 1,502 사업장
+- **최종 분석 표본**: 1,375 × 17 (Listwise Deletion 6단계)
+- **종속변수 분포**: 발생 391 (28.4%) / 미발생 984 (71.6%)
 
-### 변수 구성 (17개)
+### 변수 구성
 
 | 구분 | 변수 (수) | 비고 |
 |---|---|---|
-| 종속변수 | 사고발생 (1) | 0/1 이진 |
-| 독립 A (내부 안전관리) | 안전조직수준, 위원회수준, 인증보유 (3) | 0~1 또는 0/1 |
-| 독립 B (현장 안전행동) | 위험성평가수준, 교육훈련도움, 정리정돈상태, 작업중지권, 작업반장기여 (5) | 0~2 또는 1~5 리커트 |
-| 조절변수 | 전문지도, 고용노동부감독, 안전보건공단지원 (3) | 0/1 |
-| 통제변수 | 공사규모, 발주처, 기성공정률, 공사종류, 외국인비율 (5) | 명목형 4 + 연속형 1 |
+| 종속 | 사고발생 `accident` (1) | 0/1 |
+| 독립 A — 내부 안전관리체계 | 안전조직수준·위원회수준·인증보유 (3) | 0/1 |
+| 독립 B — 현장 안전행동 | 위험성평가수준·교육훈련도움·정리정돈상태·작업중지권·작업반장기여 (5) | 0~2 또는 1~5 리커트 |
+| 조절 — 외부기관 개입 | 전문지도·고용노동부감독·안전보건공단지원 (3) | 0/1 |
+| 통제 — 현장 특성 | 공사규모·발주처·기성공정률·공사종류·외국인비율 (5) | 더미 15 + 연속 1 |
 
 ## 분석 단계
 
-1. **Phase 1 — EDA**: 기술통계, χ²/t-test, VIF, 분포·상관 시각화
-2. **Phase 2 — 전처리**: Train/Test 8:2 stratified split, 명목형 더미 변환(총 15개), LR용 Z-score 표준화, SMOTENC (학습셋 한정, ImbPipeline으로 CV fold 내부 적용)
-3. **Phase 3 — 위계적 로지스틱 회귀**: M1(통제) → M2(+A) → M3(+B) → M4(+조절) → M5(+상호작용 24개), 우도비 검정·M5 주효과·24쌍 조절효과
-4. **Phase 4 — 머신러닝**: LR / RandomForest / XGBoost / LightGBM, 5-Fold Stratified CV + GridSearchCV(scoring=f1), ROC·PR-AUC 포함
-5. **Phase 5 — SHAP**: 전체 27변수 학습 단일 모델 기반
-   - **Figure 4**: SHAP 평균 절댓값 변수 중요도 막대그래프 (전체 27변수, 통제 vs 독립·조절 시각 구분)
-   - **Figure 5(a)**: Summary Plot — 전체 27변수
-   - **Figure 5(b)**: Summary Plot — 통제변수 **시각적 마스킹** (독립·조절 11변수만, *재학습 없음*)
-   - **Figure 6**: 정리정돈상태 SHAP Dependence
-   - **Figure 7**: SHAP 상호작용 히트맵 (독립 8 × 조절 3)
-   - 추가: Permutation Importance × SHAP × LR p-value 삼중 비교
-
-## 키 페이퍼와 차별점
-
-**키 페이퍼**: Qurat Ul Ain, S., & Rather, K. U. I. (2025). *Annals of Epidemiology*, **108**, 85-91.
-
-본 연구는 키 페이퍼의 LR + ML + SHAP 삼중 검증 프레임워크를 따르되 다음을 확장·차별화:
-
-1. **위계적 LR (M1~M5)**: 통제→A→B→조절→상호작용 24쌍 단계별 검정
-2. **단일 모델 기반 다층 SHAP 해석**: 전체 변수로 학습한 단일 모델의 SHAP 값을, 가시성 목적으로만 컬럼 필터링하여 표시 (Figure 5(b)). 키 페이퍼처럼 부분집합으로 재학습 X — 통제변수 효과의 안전관리 변수로의 흡수·과대평가를 회피하면서 해석 가시성 확보.
+1. **§3.1~3.4 전처리**: 8:2 stratified split, 더미 15, Z-score(LR), SMOTENC (학습셋 한정·CV fold 내부)
+2. **§4.1 위계적 LR**: M1(통제 16) → M2(+A) → M3(+B) → M4(+조절) → M5(+상호작용 24)
+3. **§4.2 ML**: LR/RF/XGB/LGB × 5-fold StratifiedKFold + GridSearchCV(scoring='f1') — 그리드는 논문 §7.8 (RF F1=0.517 최고) 재현을 위한 사양으로 고정 (LR `C∈[0.1,1,10]`, RF `n_est∈[200,400], depth∈[None,8,12]`, XGB·LGB 동급 sweep)
+4. **§5 SHAP**: TreeExplainer (or LinearExplainer), 단일 모델 학습 → 시각화에서만 통제변수 마스킹
 
 ## 폴더 구조
 
 ```
 construction_competition_final/
-├── README.md
-├── .gitignore
-├── requirements.txt
 ├── data/
-│   ├── 제10차 산업안전보건 실태조사_raw data_건설업_230824.CSV  (원자료)
-│   └── 전처리_최종.csv                                          (분석용)
-├── notebooks/
-│   ├── 01_전처리.ipynb         (원자료 → 전처리_최종.csv 재현)
-│   └── 02_데이터분석.ipynb     (Phase 1~5 전체)
-├── docs/
-│   ├── 데이터분석_과정_및_근거.md
-│   ├── 전처리_근거_및_과정.md
-│   └── 참고논문_정리.md
-└── results/
-    ├── tables/
-    └── figures/
+│   ├── raw_2021.csv                  원자료 (cp949 원본, UTF로 rename)
+│   ├── processed_2021.csv            전처리 산출 (1375×17, UTF-8 BOM)
+│   └── 제10차...230824.CSV             원본 보존
+├── src/
+│   ├── utils_font.py                 한글 폰트 + 흑백 호환 스타일
+│   ├── 01_preprocessing.py           표본 선정 + 변수 구성
+│   ├── 02_descriptive.py             기술통계 (table71, 72, figure71)
+│   ├── 03_logistic_regression.py     위계적 LR (table73~77)
+│   ├── 04_ml_models.py               ML 4모형 + ROC (table78, figure72)
+│   ├── 05_shap_analysis.py           SHAP (table79, figures 73~76)
+│   └── 06_research_model_figure.py   연구 모형 다이어그램 (figure21)
+├── outputs/
+│   ├── tables/                       table71~79 (9 CSVs)
+│   ├── figures/                      figure21 + figure71~76 (8 PNGs, 300dpi)
+│   └── _intermediate/                스크립트 간 캐시 (joblib)
+├── notebooks/full_pipeline.ipynb     6 스크립트 오케스트레이션
+├── docs/                             분석·전처리·참고논문 (3 md)
+├── legacy/                           이전 노트북·산출물 백업
+├── RESULTS_SUMMARY.md                자동 생성 결과 요약
+└── requirements.txt
 ```
 
-## 실행 방법
+## 실행
 
 ```bash
-# 1. 가상환경 (선택)
-python -m venv .venv
-.venv\Scripts\activate          # Windows
-# source .venv/bin/activate     # macOS/Linux
-
-# 2. 의존성 설치
+# 1) 의존성 설치
 pip install -r requirements.txt
 
-# 3. 노트북 실행 (전처리 재현은 선택)
-jupyter notebook notebooks/01_전처리.ipynb   # 원자료 → 전처리_최종.csv (생략 가능, 결과 포함됨)
-jupyter notebook notebooks/02_데이터분석.ipynb
+# 2) 순차 실행
+python src/01_preprocessing.py        # 1,375 × 17 검증
+python src/02_descriptive.py          # ~10초
+python src/03_logistic_regression.py  # ~20초
+python src/04_ml_models.py            # 15~30분 (193 grid × 5 fold)
+python src/05_shap_analysis.py        # 1~2분
+python src/06_research_model_figure.py # ~5초
+
+# 또는 notebook으로 일괄
+jupyter nbconvert --to notebook --execute notebooks/full_pipeline.ipynb
 ```
+
+## 산출물 명세
+
+### 표 (outputs/tables/, UTF-8 BOM CSV)
+
+| 파일 | 내용 |
+|---|---|
+| `table71_descriptive_continuous.csv` | 연속·순서형 6변수 평균(SD) + Welch t-test |
+| `table72_descriptive_categorical.csv` | 범주형 10변수 χ² |
+| `table73_vif.csv` | 27변수 VIF (z-scored 학습셋, 내림차순) |
+| `table74_hierarchical_lr.csv` | M1~M5 Pseudo R²·AIC·BIC |
+| `table75_lr_test.csv` | 단계별 LR test (ΔR²·χ²·df·p) |
+| `table76_m5_coefficients.csv` | M5 주효과 β/SE/z/p/OR/95%CI |
+| `table77_interactions.csv` | 24개 상호작용항 (p 오름차순) |
+| `table78_ml_performance.csv` | 4모형 CV F1·Test {Acc, P, R, F1, AUC} |
+| `table79_shap_importance.csv` | mean\|SHAP\| Top 10 + 변수 유형 |
+
+### 그림 (outputs/figures/, 300 dpi PNG, 흑백 호환)
+
+| 파일 | 내용 |
+|---|---|
+| `figure21_research_model.png` | 연구 모형 다이어그램 (4 박스 + H1~H3b 화살표) |
+| `figure71_y_distribution.png` | 종속변수 분포 (해치 패턴) |
+| `figure72_roc_curves.png` | 4모형 ROC (선 스타일 + 마커 구분) |
+| `figure73_shap_bar.png` | SHAP 평균 절댓값 Top 10 (회색 단색) |
+| `figure74a_shap_summary_all.png` | Summary Plot 전체 27변수 (Greys cmap) |
+| `figure74b_shap_summary_rqonly.png` | Summary Plot RQ 11변수 (통제 마스킹, 재학습 X) |
+| `figure75_shap_dependence_정리정돈.png` | 정리정돈 Dependence (interaction_index=None) |
+| `figure76_shap_interaction_heatmap.png` | 8×3 상호작용 |SHAP| 히트맵 |
+
+## 흑백 인쇄 호환 디자인
+
+- 컬러 의존 금지: 회색조 + 선 스타일 + 마커 + 해치 패턴
+- 선 1.5pt+, 마커 충분히 크게, 축선 검정 1.0pt
+- 격자선 회색 alpha=0.3, 배경 흰색, 스파인 top/right 제거
+
+## 한글 폰트
+
+`src/utils_font.py`가 OS별 자동 감지 → `fm.fontManager.addfont(path)`로 강제 등록:
+- macOS: AppleGothic / Apple SD Gothic Neo / NanumGothic
+- Windows: Malgun Gothic / NanumGothic / Gulim
+- Linux: NanumGothic / Noto Sans CJK KR
+
+SHAP 라이브러리 plot에는 `show=False` 후 `reapply_font_to_current_axes()`로 폰트 재적용.
 
 ## 재현성
 
 - 전역 `random_state = 42`
-- Train/Test 8:2 stratified split
-- SMOTENC는 학습셋에만, CV는 `imblearn.pipeline.Pipeline` 으로 fold 내부 적용 (데이터 누수 방지)
-- 모든 표·그림 저장: `dpi=300`, `bbox_inches='tight'`
+- Train/Test 8:2 stratified split (random_state=42)
+- SMOTENC: imblearn.Pipeline으로 CV fold의 train fold에만 작동 (val·test 원분포 유지)
+- GridSearchCV(scoring='f1', cv=StratifiedKFold(5, shuffle=True, random_state=42))
 
 ## 참고
 
-- 박천수 (2023). *보건사회연구*, 43(4).
-- 박천수 (2024). *노동정책연구*, 24(4). (동일 원자료, 위험성평가 영향 요인)
-- 박천수 (2025). *노동정책연구*, 25(4). (동일 원자료, 안전보건사고 영향 요인)
-- Reason, J. (1990, 2000). Swiss Cheese Model.
-- Levine, Toffel, & Johnson (2012). *Science*, 336(6083) — 감독의 선택편향 보정 증거.
+- 원자료: 한국산업안전보건공단 산업안전보건연구원 (2021). 제10차 산업안전보건 실태조사.
+- 박천수 (2024, 2025). 동일 원자료 선행연구 (전처리 절차 준용).
+- Reason (1990, 2000). Swiss Cheese Model.
+- Levine, Toffel, Johnson (2012). *Science* — 외부감독 선택편향 보정.
+- Lundberg & Lee (2017). SHAP.
+- Chawla et al. (2002). SMOTE.

@@ -54,3 +54,7 @@ htmlcov/
 *.log
 *.tmp
 *.bak
+
+# --- 스크립트 간 캐시 (재실행으로 재생성) ---
+outputs/_intermediate/
+*.joblib

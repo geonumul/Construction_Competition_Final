@@ -161,7 +161,7 @@ bar_colors = [COLOR_FOCUS if f else COLOR_CTRL_LT for f in bar_df['is_focus']]
 
 W = 125.85 / 25.4; H = 78.46 / 25.4
 fig = plt.figure(figsize=(W, H))
-gs = GridSpec(1, 1, left=0.27, right=0.97, top=0.97, bottom=0.10, figure=fig)
+gs = GridSpec(1, 1, left=0.27, right=0.97, top=0.97, bottom=0.17, figure=fig)
 ax = fig.add_subplot(gs[0])
 ax.barh(np.arange(len(bar_df)), bar_df['mean|SHAP|'],
         color=bar_colors, edgecolor='none', height=0.72)

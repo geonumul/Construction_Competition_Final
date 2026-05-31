@@ -147,27 +147,16 @@ report_dims(OUT / '11_roc_curves.png')
 
 
 # ============ 그림 7.2 — SHAP Bar 전체 27변수 (125.85 × 78.46 mm) ============
-def cat_of(v):
-    if v in VARS_A:   return ('A', COLOR_INV_A,   '////', '독립 A · 내부 안전관리체계')
-    if v in VARS_B:   return ('B', COLOR_INV_B,   'xxxx', '독립 B · 현장 안전행동')
-    if v in VARS_MOD: return ('M', COLOR_MOD,     '....', '조절 · 외부기관 개입')
-    return                  ('C', COLOR_CONTROL,  '',     '통제 · 현장 특성')
-
 mean_abs = np.abs(shap_values).mean(axis=0)
 bar_df = pd.DataFrame({'변수': FEATURE_COLS, 'mean|SHAP|': mean_abs})
 bar_df = bar_df.sort_values('mean|SHAP|', ascending=True).reset_index(drop=True)
-meta = [cat_of(v) for v in bar_df['변수']]
 
 W = 125.85 / 25.4; H = 78.46 / 25.4
 fig = plt.figure(figsize=(W, H))
 gs = GridSpec(1, 1, left=0.27, right=0.97, top=0.97, bottom=0.10, figure=fig)
 ax = fig.add_subplot(gs[0])
-bars = ax.barh(np.arange(len(bar_df)), bar_df['mean|SHAP|'],
-                color=[m[1] for m in meta], edgecolor='black', linewidth=0.3,
-                height=0.74)
-for b, m in zip(bars, meta):
-    if m[2]:
-        b.set_hatch(m[2])
+ax.barh(np.arange(len(bar_df)), bar_df['mean|SHAP|'],
+        color='#1F4E79', edgecolor='none', height=0.72)
 
 xmax = bar_df['mean|SHAP|'].max()
 for i, val in enumerate(bar_df['mean|SHAP|']):
@@ -182,15 +171,6 @@ ax.spines['top'].set_visible(False)
 ax.spines['right'].set_visible(False)
 ax.grid(axis='x', alpha=1.0, color='#E0E0E0', linewidth=0.4)
 
-handles = [
-    Patch(facecolor=COLOR_INV_A,   edgecolor='black', linewidth=0.3, hatch='////', label='독립 A · 내부 안전관리체계'),
-    Patch(facecolor=COLOR_INV_B,   edgecolor='black', linewidth=0.3, hatch='xxxx', label='독립 B · 현장 안전행동'),
-    Patch(facecolor=COLOR_MOD,     edgecolor='black', linewidth=0.3, hatch='....', label='조절 · 외부기관 개입'),
-    Patch(facecolor=COLOR_CONTROL, edgecolor='black', linewidth=0.3, label='통제 · 현장 특성'),
-]
-ax.legend(handles=handles, loc='lower right', frameon=True, framealpha=0.95,
-          edgecolor='#666666', fontsize=6.5,
-          handlelength=1.4, handletextpad=0.4, borderpad=0.3)
 fig.set_size_inches(W, H, forward=True)
 fig.savefig(OUT / '13_shap_bar.png', dpi=300, bbox_inches=None, pad_inches=0)
 plt.close()
@@ -207,13 +187,9 @@ W = 107.39 / 25.4; H = 45.02 / 25.4
 fig = plt.figure(figsize=(W, H))
 ax = fig.add_axes([0.12, 0.26, 0.85, 0.69])
 
-# 색상: 양수=빨강, 음수=파랑
 rng = np.random.RandomState(42)
 xj = xv + rng.uniform(-0.10, 0.10, size=len(xv))
-color_pos = '#C00000'
-color_neg = '#1F4E79'
-colors = np.where(yv > 0, color_pos, color_neg)
-ax.scatter(xj, yv, s=8, alpha=0.5, c=colors, edgecolors='none')
+ax.scatter(xj, yv, s=8, alpha=0.5, c='#1F4E79', edgecolors='none')
 
 ax.axhline(0, color='#888888', linestyle='--', linewidth=0.6)
 ax.axvline(3, color='#888888', linestyle='--', linewidth=0.6)
@@ -255,10 +231,7 @@ ax.set_yticks(range(len(rows))); ax.set_yticklabels(rows, fontsize=7)
 ax.tick_params(axis='both', length=0)
 ax.set_xlabel('조절변수', fontsize=7)
 ax.set_ylabel('독립변수', fontsize=7)
-ax.set_xticks(np.arange(len(cols) + 1) - 0.5, minor=True)
-ax.set_yticks(np.arange(len(rows) + 1) - 0.5, minor=True)
-ax.grid(which='minor', color='#666666', linewidth=0.4)
-ax.tick_params(which='minor', length=0)
+ax.grid(False)
 
 cbar = fig.colorbar(im, cax=cax)
 cbar.ax.tick_params(labelsize=6)

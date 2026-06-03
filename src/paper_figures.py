@@ -233,7 +233,7 @@ if mat is None:
 W = 93.03 / 25.4; H = 63.97 / 25.4
 fig = plt.figure(figsize=(W, H))
 gs = GridSpec(1, 2, width_ratios=[24, 1], wspace=0.05,
-              left=0.22, right=0.90, top=0.94, bottom=0.22, figure=fig)
+              left=0.30, right=0.85, top=0.94, bottom=0.22, figure=fig)
 ax = fig.add_subplot(gs[0])
 cax = fig.add_subplot(gs[1])
 
@@ -244,7 +244,7 @@ for i in range(len(rows)):
         text_color = 'white' if v > mat.max() * 0.55 else 'black'
         ax.text(j, i, f'{v:.4f}', ha='center', va='center',
                 fontsize=5.5, color=text_color)
-ax.set_xticks(range(len(cols))); ax.set_xticklabels(cols, fontsize=7)
+ax.set_xticks(range(len(cols))); ax.set_xticklabels(cols, fontsize=6)
 ax.set_yticks(range(len(rows))); ax.set_yticklabels(rows, fontsize=7)
 ax.tick_params(axis='both', length=0)
 ax.set_xlabel('조절변수', fontsize=7)

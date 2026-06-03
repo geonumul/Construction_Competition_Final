@@ -193,13 +193,13 @@ plt.close()
 report_dims(OUT / '13_shap_bar.png')
 
 
-# ============ 그림 7.4 — Dependence 정리정돈 (107.39 × 45.02 mm) ============
+# ============ 그림 7.4 — Dependence 정리정돈 (92.83 × 50.52 mm) ============
 key = '정리정돈상태'
 key_idx = FEATURE_COLS.index(key)
 xv = X_for_plot[key].values
 yv = shap_values[:, key_idx]
 
-W = 107.39 / 25.4; H = 45.02 / 25.4
+W = 92.83 / 25.4; H = 50.52 / 25.4
 fig = plt.figure(figsize=(W, H))
 ax = fig.add_axes([0.12, 0.26, 0.85, 0.69])
 
@@ -223,14 +223,14 @@ plt.close()
 report_dims(OUT / '12_shap_dependence_housekeeping.png')
 
 
-# ============ 그림 7.5 — Interaction Heatmap (126.60 × 62.80 mm) ============
+# ============ 그림 7.5 — Interaction Heatmap (93.03 × 63.97 mm) ============
 mat = shap_c.get('interaction_mat')
 rows = shap_c.get('interaction_rows')
 cols = shap_c.get('interaction_cols')
 if mat is None:
     raise RuntimeError('interaction_mat not in shap_cache. 05_shap_analysis 재실행 필요.')
 
-W = 126.60 / 25.4; H = 62.80 / 25.4
+W = 93.03 / 25.4; H = 63.97 / 25.4
 fig = plt.figure(figsize=(W, H))
 gs = GridSpec(1, 2, width_ratios=[24, 1], wspace=0.05,
               left=0.22, right=0.90, top=0.94, bottom=0.22, figure=fig)

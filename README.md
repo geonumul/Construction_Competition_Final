@@ -25,10 +25,14 @@
 
 ## 분석 단계
 
-1. **§3.1~3.4 전처리**: 8:2 stratified split, 더미 15, Z-score(LR), SMOTENC (학습셋 한정·CV fold 내부)
-2. **§4.1 위계적 LR**: M1(통제 16) → M2(+A) → M3(+B) → M4(+조절) → M5(+상호작용 24)
+1. **§3.1~3.4 전처리**: 더미 15, Z-score, SMOTENC (학습셋 한정·CV fold 내부). 8:2 stratified split은 **ML 예측(§4.2)·SHAP(§5) 전용**.
+2. **§4.1 위계적 LR**: M1(통제 16) → M2(+A) → M3(+B) → M4(+조절) → M5(+상호작용 24). **★추론 회귀(M1~M5, VIF)는 모집단 효과 추정이 목적이므로 전체표본 n=1,375에 적합한다** (train/test 분할을 쓰지 않음 — 분할은 예측 평가 전용).
 3. **§4.2 ML**: LR/RF/XGB/LGB × 5-fold StratifiedKFold + GridSearchCV(scoring='f1') — 그리드는 논문 §7.8 (RF F1=0.517 최고) 재현을 위한 사양으로 고정 (LR `C∈[0.1,1,10]`, RF `n_est∈[200,400], depth∈[None,8,12]`, XGB·LGB 동급 sweep)
 4. **§5 SHAP**: TreeExplainer (or LinearExplainer), 단일 모델 학습 → 시각화에서만 통제변수 마스킹
+
+> **표본 이력 (중요).** 이전 버전은 추론 회귀(표 7.3~7.7)를 전체표본이 아니라 8:2 **학습분할(n=1,100)** 에 적합하는 버그가 있었다(`sm.Logit(y_train, …)`). 학습분할 적합값이 옛 결과표와 소수점까지 일치(정리정돈 β=−0.168/p=0.101, M5 AIC=1192.57)함이 `src/validation/diagnose_trainsplit_bug.py`로 증명된다. 현재는 **전체표본 n=1,375** 로 바로잡았으며, 이로써 경계선 변수가 경향→유의로 전환된다: **정리정돈상태 p=0.101→0.021**, **인증보유×고용노동부감독 p=0.063→0.007**(부호 + 유지). ML·SHAP 출력은 분할이 동일하여 불변(캐시 분할 해시로 확인). 진단·검증 근거는 [`src/validation/`](src/validation/) 참조.
+>
+> **VIF (표 7.3).** 전체표본 기준 최대 5.10(공사종류_1), 나머지 26개 변수 < 4.2. 5를 근소 초과한 공사종류_1은 동일 범주형에서 파생된 더미로 구조적으로 VIF가 다소 높으며(O'Brien, 2007), 관용 기준(10)에 크게 못 미쳐 실질적 다중공선성 문제로 보기 어렵다.
 
 ## 폴더 구조
 
@@ -45,7 +49,8 @@ construction_competition_final/
 │   ├── 03_logistic_regression.py     위계적 LR (table73~77)
 │   ├── 04_ml_models.py               ML 4모형 + ROC (table78, figure72)
 │   ├── 05_shap_analysis.py           SHAP (table79, figures 73~76)
-│   └── 06_research_model_figure.py   연구 모형 다이어그램 (figure21)
+│   ├── 06_research_model_figure.py   연구 모형 다이어그램 (figure21)
+│   └── validation/                   표본 버그 진단·검증 근거 (train분할 n1100 → 전체표본 n1375)
 ├── outputs/
 │   ├── tables/                       table71~79 (9 CSVs)
 │   ├── figures/                      figure21 + figure71~76 (8 PNGs, 300dpi)

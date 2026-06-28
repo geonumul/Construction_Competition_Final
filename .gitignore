@@ -58,3 +58,10 @@ htmlcov/
 # --- 스크립트 간 캐시 (재실행으로 재생성) ---
 outputs/_intermediate/
 *.joblib
+
+# --- 검증 스크립트 산출물 (재실행으로 재생성) ---
+src/validation/outputs/
+
+# --- 공모전 제출 원고 PDF (저자 이메일·소속 등 개인정보 → 레포 미포함) ---
+산업안전공모전 논문_0531_최종본.pdf
+*.pdf

@@ -82,8 +82,16 @@ X_train_z = pd.DataFrame(scaler.fit_transform(X_train), columns=FEATURE_COLS, in
 X_test_z  = pd.DataFrame(scaler.transform(X_test),       columns=FEATURE_COLS, index=X_test.index)
 
 
-# ============ Table 7.3 — VIF (z-scored 학습셋, 전체 27 + 더미 11 = 27) ============
-X_vif = add_constant(X_train_z)
+# ── 추론 회귀용 전체표본 표준화 (n=1375) ─────────────────────────────
+# 추론 LR(M1~M5)·VIF는 모집단 효과 추정이 목적 → 가용 전체표본에 적합한다.
+# 위 train/test 분할·train-fit scaler·캐시는 ML(04) 전용으로 그대로 둔다.
+scaler_inf = StandardScaler()
+X_z_full = pd.DataFrame(scaler_inf.fit_transform(X), columns=FEATURE_COLS, index=X.index)
+print(f'추론 회귀 표본(전체): {X_z_full.shape}  (분할 train={X_train.shape[0]}는 ML 전용)')
+
+
+# ============ Table 7.3 — VIF (z-scored 전체표본 n=1375, 더미 15 + 연속 1 + 독립/조절 11 = 27) ============
+X_vif = add_constant(X_z_full)
 vif_rows = []
 for i, col in enumerate(X_vif.columns):
     if col == 'const':
@@ -102,9 +110,9 @@ print(t73.tail(2).to_string(index=False))
 INTERACTION_PAIRS = list(itertools.product(VARS_A + VARS_B, VARS_MOD))  # 8 × 3
 INTERACTION_COLS = [f'{x}__x__{m}' for x, m in INTERACTION_PAIRS]
 
-X_train_full = X_train_z.copy()
+X_inf_full = X_z_full.copy()
 for x, m in INTERACTION_PAIRS:
-    X_train_full[f'{x}__x__{m}'] = X_train_z[x] * X_train_z[m]
+    X_inf_full[f'{x}__x__{m}'] = X_z_full[x] * X_z_full[m]
 
 cols_M1 = CONTROL_COLS
 cols_M2 = cols_M1 + VARS_A
@@ -114,8 +122,8 @@ cols_M5 = cols_M4 + INTERACTION_COLS
 
 
 def fit(cols):
-    X_ = add_constant(X_train_full[cols].astype(float))
-    return sm.Logit(y_train, X_).fit(disp=False, maxiter=200)
+    X_ = add_constant(X_inf_full[cols].astype(float))
+    return sm.Logit(y, X_).fit(disp=False, maxiter=200)
 
 
 m1, m2, m3, m4, m5 = (fit(c) for c in (cols_M1, cols_M2, cols_M3, cols_M4, cols_M5))
